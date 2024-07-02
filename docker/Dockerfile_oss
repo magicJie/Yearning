@@ -1,0 +1,19 @@
+ARG BASEIMAGES=3.17
+# 构建前端项目gemini-next，yarn build。将dist复制到src/dist,go mod tidy ,go build 生产Yearning-go
+FROM yeelabs/juno AS juno
+COPY ./Yearning-go /app/Yearning
+COPY ./conf.toml.template /app/conf.toml
+COPY ./docker/entrypoint.sh /app/entrypoint.sh
+
+FROM alpine:${BASEIMAGES}
+LABEL maintainer="red_stone@foxmail.com"
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+    && apk update  \
+    && apk add --no-cache ca-certificates bash tree tzdata libc6-compat dumb-init \
+    && cp -rf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+COPY --from=juno /app /opt
+WORKDIR /opt/
+EXPOSE 8000
+
+ENTRYPOINT ["/opt/entrypoint.sh"]
